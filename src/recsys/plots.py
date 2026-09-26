@@ -22,6 +22,16 @@ TEXT_SECONDARY = "#52514e"
 GRID = "#e4e3df"
 NEUTRAL = "#a3a29c"
 SERIES = ("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300")
+# Закреплённые цвета моделей: цвет следует за моделью на всех графиках сравнения.
+MODEL_COLORS: dict[str, str] = {
+    "Popularity (mean)": SERIES[0],
+    "Popularity (weighted)": SERIES[1],
+    "Content-Based": SERIES[2],
+    "Item-based CF": SERIES[3],
+    "FunkSVD": SERIES[4],
+    "PureSVD": SERIES[5],
+    "Hybrid": "#4a3aa7",
+}
 # Последовательная шкала одного оттенка: head (тёмный) → tail (светлый).
 POPULARITY_RAMP = ("#104281", "#2a78d6", "#86b6ef")
 
@@ -588,5 +598,36 @@ def plot_exposure(table: pd.DataFrame, reference: pd.DataFrame) -> Figure:
     ax.set_xlabel("Доля позиций top-10 (для опорных строк — доля книг или оценок)")
     ax.set_title("Exposure: head / mid / long tail")
     ax.legend(ncols=3, loc="upper center", bbox_to_anchor=(0.5, -0.14))
+    fig.tight_layout()
+    return fig
+
+
+def plot_cold_start(table: pd.DataFrame, columns: tuple[str, ...] = ("ndcg", "hit_rate")) -> Figure:
+    """Строит метрики моделей в зависимости от длины истории пользователя в train.
+
+    Args:
+        table: Метрики с индексом (model, history); history — длина истории, последняя
+            точка может быть подписана как полная история.
+        columns: Метрики, по одной панели на метрику.
+
+    Returns:
+        График.
+    """
+    fig, axes = plt.subplots(1, len(columns), figsize=(6.2 * len(columns), 4.4))
+    models = table.index.get_level_values("model").unique()
+    histories = table.index.get_level_values("history").unique()
+    x = np.arange(len(histories))
+    for ax, column in zip(axes, columns, strict=True):
+        for model in models:
+            part = table.loc[model].reindex(histories)
+            ax.plot(
+                x, part[column].to_numpy(), marker="o", color=MODEL_COLORS.get(model), label=model
+            )
+        ax.set_xticks(x, [str(h) for h in histories])
+        ax.set_xlabel("Число оценок пользователя в train")
+        ax.set_ylabel(f"{METRIC_LABELS[column]}@10 на test")
+        ax.set_title(f"{METRIC_LABELS[column]}@10 при усечённой истории")
+    axes[-1].yaxis.set_major_formatter(PercentFormatter(1.0))
+    axes[0].legend(fontsize=8)
     fig.tight_layout()
     return fig

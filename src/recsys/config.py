@@ -53,6 +53,18 @@ SVD_LR_ALL: float = 0.005
 SVD_REG_ALL: float = 0.05
 SVD_MIN_ITEM_RATINGS: int = 1
 PURE_SVD_N_FACTORS: int = 200
+# Гибрид: вес CF β(n) = n / (n + HYBRID_N0), остальное — Popularity; CF-скор — для книг
+# с ≥ HYBRID_MIN_ITEM_RATINGS оценками в train, для остальных — контентный скор с весом
+# HYBRID_NEW_ITEM_WEIGHT. Оба параметра выбраны на valid (симуляция cold start).
+HYBRID_N0: float = 5.0
+HYBRID_MIN_ITEM_RATINGS: int = 1
+HYBRID_NEW_ITEM_WEIGHT: float = 0.35
+
+# Симуляция cold start: число пользователей с усечённой историей, длины истории,
+# доля каталога, скрываемая как новые книги.
+COLD_N_USERS: int = 5_000
+COLD_HISTORY_LENGTHS: tuple[int, ...] = (1, 3, 5, 10, 20)
+COLD_ITEM_SHARE: float = 0.05
 
 # Сегменты пользователей по числу оценок: границы [left, right).
 USER_ACTIVITY_BINS: tuple[int, ...] = (0, 50, 100, 150, 10_000)
