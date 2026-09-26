@@ -45,6 +45,12 @@ CONTENT_N_TAGS: int | None = None
 ITEM_CF_SIMILARITY: str = "adjusted_cosine"
 ITEM_CF_NEIGHBORS: int = 50
 ITEM_CF_SHRINKAGE: float = 50.0
+SVD_N_FACTORS: int = 100
+SVD_N_EPOCHS: int = 30
+SVD_LR_ALL: float = 0.005
+SVD_REG_ALL: float = 0.05
+SVD_MIN_ITEM_RATINGS: int = 1
+PURE_SVD_N_FACTORS: int = 200
 
 # Сегменты пользователей по числу оценок: границы [left, right).
 USER_ACTIVITY_BINS: tuple[int, ...] = (0, 50, 100, 150, 10_000)

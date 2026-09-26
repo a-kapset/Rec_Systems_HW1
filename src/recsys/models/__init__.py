@@ -1,12 +1,13 @@
 """Модели рекомендаций с общим интерфейсом `Recommender`.
 
-Popularity, Content-Based и Item-based CF; SVD и гибрид добавляются в
-отдельных модулях пакета.
+Popularity, Content-Based, Item-based CF, FunkSVD и PureSVD; гибрид добавляется
+в отдельном модуле пакета.
 """
 
 from recsys.models.base import Recommender
 from recsys.models.content import ContentBased
 from recsys.models.item_cf import ItemCF
 from recsys.models.popularity import Popularity
+from recsys.models.svd import FunkSVD, PureSVD
 
-__all__ = ["ContentBased", "ItemCF", "Popularity", "Recommender"]
+__all__ = ["ContentBased", "FunkSVD", "ItemCF", "Popularity", "PureSVD", "Recommender"]
