@@ -318,3 +318,43 @@ def plot_activity_vs_rating(users: pd.DataFrame, books: pd.DataFrame) -> Figure:
     ax_books.set_title("Средняя оценка книги vs популярность")
     fig.tight_layout()
     return fig
+
+
+def plot_popularity_threshold(grid: pd.DataFrame, count_ndcg: float, chosen: int) -> Figure:
+    """Строит зависимость nDCG@10 модели Popularity от порога числа оценок.
+
+    Левая панель — nDCG@10 вариантов `mean` и `weighted` и уровень варианта
+    `count`; правая — число книг, допущенных к рекомендации вариантом `mean`.
+
+    Args:
+        grid: Таблица `method`, `min_ratings`, `ndcg`, `n_candidates`.
+        count_ndcg: nDCG@10 варианта `count`.
+        chosen: Выбранный порог варианта `mean`.
+
+    Returns:
+        График.
+    """
+    fig, (ax_metric, ax_pool) = plt.subplots(1, 2, figsize=(12, 4.2))
+    labels = {"mean": "средний рейтинг с порогом m", "weighted": "weighted rating, параметр m"}
+    for (method, label), color in zip(labels.items(), SERIES, strict=False):
+        part = grid[(grid["method"] == method) & (grid["min_ratings"] > 0)]
+        ax_metric.plot(part["min_ratings"], part["ndcg"], marker="o", color=color, label=label)
+    ax_metric.axhline(count_ndcg, color=NEUTRAL, linestyle="--", label="число оценок (count)")
+    ax_metric.axvline(chosen, color=TEXT_SECONDARY, linestyle=":", linewidth=1)
+    ax_metric.set_xscale("log")
+    ax_metric.set_xlabel("m (лог. шкала)")
+    ax_metric.set_ylabel("nDCG@10 на valid")
+    ax_metric.set_title("Popularity: качество vs порог")
+    ax_metric.legend(loc="lower right")
+
+    mean = grid[(grid["method"] == "mean") & (grid["min_ratings"] > 0)]
+    ax_pool.plot(mean["min_ratings"], mean["n_candidates"], marker="o", color=SERIES[0])
+    ax_pool.axvline(chosen, color=TEXT_SECONDARY, linestyle=":", linewidth=1)
+    ax_pool.set_xscale("log")
+    ax_pool.set_yscale("log")
+    ax_pool.yaxis.set_major_formatter(FuncFormatter(_thousands))
+    ax_pool.set_xlabel("Порог m (лог. шкала)")
+    ax_pool.set_ylabel("Число книг с ≥ m оценками (лог. шкала)")
+    ax_pool.set_title("Размер пула кандидатов")
+    fig.tight_layout()
+    return fig

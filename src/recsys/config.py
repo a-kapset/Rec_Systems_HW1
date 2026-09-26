@@ -32,7 +32,16 @@ N_USERS: int = 53_424
 
 RELEVANCE_THRESHOLD: int = 4
 TEST_FRACTION: float = 0.2
+MIN_RATINGS_TO_SPLIT: int = 5
 K_VALUES: tuple[int, ...] = (5, 10, 20)
+EVAL_N_USERS: int = 10_000
+EVAL_BATCH_SIZE: int = 2_000
+
+# Гиперпараметры (выбраны на valid при обучении на train_inner). Порог числа оценок
+# Popularity масштабируется пропорционально размеру обучающей выборки.
+POPULARITY_MIN_RATINGS: int = 7_000
+POPULARITY_WR_M: int = 100_000
+CONTENT_N_TAGS: int | None = None
 
 # Сегменты пользователей по числу оценок: границы [left, right).
 USER_ACTIVITY_BINS: tuple[int, ...] = (0, 50, 100, 150, 10_000)

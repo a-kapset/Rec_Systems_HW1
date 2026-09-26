@@ -3,13 +3,16 @@
 Чтение CSV из `data/raw` с компактными типами, сохранение исходного порядка строк
 `ratings.csv` (порядок строк соответствует хронологии оценок) и проверка
 целостности: диапазоны идентификаторов и оценок, дубликаты, пропуски, ссылочная
-целостность между таблицами.
+целостность между таблицами. Очистка тегов и построение разреженной матрицы
+взаимодействий «пользователь × книга».
 """
 
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from scipy import sparse
 
 from recsys import config
 
@@ -246,3 +249,28 @@ def clean_book_tags(data: GoodbooksData) -> pd.DataFrame:
     cleaned = usage.groupby(["book_id", "tag_name"], as_index=False, observed=True)["count"].sum()
     cleaned = cleaned.astype({"book_id": "int32", "tag_name": "string", "count": "int32"})
     return cleaned.sort_values(["book_id", "count"], ascending=[True, False], ignore_index=True)
+
+
+def interaction_matrix(ratings: pd.DataFrame, binary: bool = False) -> sparse.csr_matrix:
+    """Строит разреженную матрицу взаимодействий «пользователь × книга».
+
+    Строка `user_id - 1`, столбец `book_id - 1` (идентификаторы непрерывны),
+    форма `(N_USERS, N_BOOKS)` независимо от состава выборки.
+
+    Args:
+        ratings: Оценки `user_id, book_id, rating`.
+        binary: True — значения 1 для всех взаимодействий, иначе — оценки.
+
+    Returns:
+        Матрица `csr_matrix` float32.
+    """
+    values = (
+        np.ones(len(ratings), dtype=np.float32)
+        if binary
+        else ratings["rating"].to_numpy(dtype=np.float32)
+    )
+    return sparse.csr_matrix(
+        (values, (ratings["user_id"].to_numpy() - 1, ratings["book_id"].to_numpy() - 1)),
+        shape=(config.N_USERS, config.N_BOOKS),
+        dtype=np.float32,
+    )
