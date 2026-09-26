@@ -184,3 +184,65 @@ def validate(data: GoodbooksData) -> dict[str, int]:
         "book_tags_nonpositive_count": int((book_tags["count"] <= 0).sum()),
         "books_missing_original_title": int(books["original_title"].isna().sum()),
     }
+
+
+def is_service_tag(tag_names: pd.Series) -> pd.Series:
+    """Определяет служебные теги, не описывающие содержание книги.
+
+    Служебными считаются теги из стоп-списка, теги по шаблонам (годы, статус
+    чтения, личные полки, форматы, личные оценки) и теги без латинских букв.
+
+    Args:
+        tag_names: Названия тегов.
+
+    Returns:
+        Булева маска той же длины: True для служебных тегов.
+    """
+    names = tag_names.astype("string").str.lower()
+    pattern = "|".join(f"(?:{p})" for p in config.STOP_TAG_PATTERNS)
+    return (
+        names.isin(config.STOP_TAGS)
+        | names.str.contains(pattern, regex=True)
+        | ~names.str.contains("[a-z]", regex=True)
+    ).fillna(True)
+
+
+def tag_usage(data: GoodbooksData) -> pd.DataFrame:
+    """Сопоставляет теги книгам датасета по `goodreads_book_id`.
+
+    Записи с неположительным `count` отбрасываются.
+
+    Args:
+        data: Набор таблиц датасета.
+
+    Returns:
+        DataFrame `book_id`, `tag_name`, `count` без очистки названий.
+    """
+    usage = (
+        data.book_tags[data.book_tags["count"] > 0]
+        .merge(data.books[["book_id", "goodreads_book_id"]], on="goodreads_book_id")
+        .merge(data.tags, on="tag_id")
+    )
+    return usage[["book_id", "tag_name", "count"]].reset_index(drop=True)
+
+
+def clean_book_tags(data: GoodbooksData) -> pd.DataFrame:
+    """Строит очищенную таблицу тегов книг.
+
+    Удаляются служебные теги, синонимы приводятся к единой форме, повторяющиеся
+    пары (книга, тег) объединяются суммированием `count`.
+
+    Args:
+        data: Набор таблиц датасета.
+
+    Returns:
+        DataFrame `book_id` (int32), `tag_name` (string), `count` (int32),
+        упорядоченный по `book_id` и убыванию `count`.
+    """
+    usage = tag_usage(data)
+    usage = usage[~is_service_tag(usage["tag_name"])]
+    names = usage["tag_name"].str.lower()
+    usage = usage.assign(tag_name=names.replace(config.TAG_SYNONYMS))
+    cleaned = usage.groupby(["book_id", "tag_name"], as_index=False, observed=True)["count"].sum()
+    cleaned = cleaned.astype({"book_id": "int32", "tag_name": "string", "count": "int32"})
+    return cleaned.sort_values(["book_id", "count"], ascending=[True, False], ignore_index=True)
