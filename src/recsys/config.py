@@ -40,6 +40,8 @@ EVAL_BATCH_SIZE: int = 2_000
 # Гиперпараметры (выбраны на valid при обучении на train_inner). Порог числа оценок
 # Popularity масштабируется пропорционально размеру обучающей выборки.
 POPULARITY_MIN_RATINGS: int = 7_000
+# 7 000 · |train| / |train_inner| = 7 000 · 4 781 208 / 3 824 978.
+POPULARITY_MIN_RATINGS_TRAIN: int = 8_750
 POPULARITY_WR_M: int = 100_000
 CONTENT_N_TAGS: int | None = None
 ITEM_CF_SIMILARITY: str = "adjusted_cosine"

@@ -93,6 +93,25 @@ def describe_counts(counts: pd.Series) -> pd.Series:
     return pd.concat([quantiles, pd.Series({"mean": counts.mean()})])
 
 
+def activity_segment(ratings: pd.DataFrame) -> pd.Series:
+    """Определяет сегмент активности каждого пользователя по числу оценок.
+
+    Границы сегментов задаются `config.USER_ACTIVITY_BINS`.
+
+    Args:
+        ratings: Оценки `user_id, book_id, rating`.
+
+    Returns:
+        Categorical Series с индексом `user_id` и метками `config.USER_ACTIVITY_LABELS`.
+    """
+    return pd.cut(
+        ratings.groupby("user_id").size(),
+        bins=list(config.USER_ACTIVITY_BINS),
+        labels=list(config.USER_ACTIVITY_LABELS),
+        right=False,
+    ).rename("segment")
+
+
 def user_segments(ratings: pd.DataFrame) -> pd.DataFrame:
     """Разбивает пользователей на сегменты по активности.
 
@@ -106,12 +125,7 @@ def user_segments(ratings: pd.DataFrame) -> pd.DataFrame:
         средняя оценка.
     """
     per_user = ratings.groupby("user_id")["rating"].agg(["size", "mean"])
-    segment = pd.cut(
-        per_user["size"],
-        bins=list(config.USER_ACTIVITY_BINS),
-        labels=list(config.USER_ACTIVITY_LABELS),
-        right=False,
-    )
+    segment = activity_segment(ratings)
     grouped = per_user.groupby(segment, observed=False)
     table = pd.DataFrame(
         {
