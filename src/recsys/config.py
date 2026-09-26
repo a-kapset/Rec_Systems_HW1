@@ -42,6 +42,9 @@ EVAL_BATCH_SIZE: int = 2_000
 POPULARITY_MIN_RATINGS: int = 7_000
 POPULARITY_WR_M: int = 100_000
 CONTENT_N_TAGS: int | None = None
+ITEM_CF_SIMILARITY: str = "adjusted_cosine"
+ITEM_CF_NEIGHBORS: int = 50
+ITEM_CF_SHRINKAGE: float = 50.0
 
 # Сегменты пользователей по числу оценок: границы [left, right).
 USER_ACTIVITY_BINS: tuple[int, ...] = (0, 50, 100, 150, 10_000)

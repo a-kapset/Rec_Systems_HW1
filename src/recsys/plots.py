@@ -358,3 +358,36 @@ def plot_popularity_threshold(grid: pd.DataFrame, count_ndcg: float, chosen: int
     ax_pool.set_title("Размер пула кандидатов")
     fig.tight_layout()
     return fig
+
+
+def plot_item_cf_grid(grid: pd.DataFrame, shrinkage: float) -> Figure:
+    """Строит зависимость RMSE и nDCG@10 Item-based CF от числа соседей K.
+
+    Линии — меры схожести при фиксированном λ.
+
+    Args:
+        grid: Таблица `similarity`, `shrinkage`, `k`, `rmse`, `ndcg`.
+        shrinkage: Значение λ для отображения.
+
+    Returns:
+        График.
+    """
+    fig, (ax_rmse, ax_ndcg) = plt.subplots(1, 2, figsize=(12, 4.2))
+    part = grid[grid["shrinkage"] == shrinkage]
+    for (similarity, group), color in zip(part.groupby("similarity"), SERIES, strict=False):
+        group = group.sort_values("k")
+        ax_rmse.plot(group["k"], group["rmse"], marker="o", color=color, label=similarity)
+        ax_ndcg.plot(group["k"], group["ndcg"], marker="o", color=color, label=similarity)
+    for ax, ylabel, title in (
+        (ax_rmse, "RMSE на valid", "Ошибка предсказания оценки"),
+        (ax_ndcg, "nDCG@10 на valid", "Качество top-10"),
+    ):
+        ax.set_xscale("log")
+        ax.set_xticks(sorted(part["k"].unique()))
+        ax.xaxis.set_major_formatter(FuncFormatter(_thousands))
+        ax.set_xlabel("Число соседей K (лог. шкала)")
+        ax.set_ylabel(ylabel)
+        ax.set_title(f"{title}, λ = {shrinkage:g}")
+        ax.legend()
+    fig.tight_layout()
+    return fig

@@ -98,3 +98,29 @@ class Recommender(ABC):
             top = top_k_indices(scores, k)
             result[start : start + batch.size, : top.shape[1]] = np.where(top >= 0, top + 1, -1)
         return result
+
+    def get_recommendations(
+        self,
+        user_id: int,
+        books: pd.DataFrame,
+        n: int = 5,
+        exclude: sparse.csr_matrix | None = None,
+    ) -> pd.DataFrame:
+        """Формирует top-N рекомендации одного пользователя с метаданными книг.
+
+        Args:
+            user_id: Идентификатор пользователя.
+            books: Метаданные книг (`book_id`, `title`, `authors`).
+            n: Длина списка.
+            exclude: Матрица (N_USERS, N_BOOKS) книг, исключаемых из выдачи.
+
+        Returns:
+            DataFrame: `book_id`, `title`, `authors`, `score` по убыванию скора.
+        """
+        scores = np.array(self.score(np.array([user_id])), dtype=np.float32)
+        if exclude is not None:
+            scores[0, exclude[user_id - 1].indices] = -np.inf
+        top = top_k_indices(scores, n)[0]
+        top = top[top >= 0]
+        result = books.set_index("book_id").loc[top + 1, ["title", "authors"]].reset_index()
+        return result.assign(score=scores[0, top])
